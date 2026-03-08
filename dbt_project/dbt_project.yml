@@ -1,0 +1,24 @@
+name: 'analytics_chatbot'
+version: '1.0.0'
+config-version: 2
+
+profile: 'analytics_chatbot'
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+snapshot-paths: ["snapshots"]
+macro-paths: ["macros"]
+test-paths: ["tests"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  analytics_chatbot:
+    staging:
+      +materialized: view
+    intermediate:
+      +materialized: view
+    marts:
+      +materialized: table

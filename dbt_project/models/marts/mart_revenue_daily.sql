@@ -7,10 +7,10 @@
 ) }}
 
 SELECT
-    DATE(order_timestamp) AS order_date,
+    order_date,
     COUNT(*) AS order_count,
     SUM(total_amount) AS revenue,
     AVG(total_amount) AS avg_order_value
-FROM {{ ref('stg_orders') }}
+FROM {{ ref('fct_orders') }}
 WHERE order_status = 'completed'
 GROUP BY order_date

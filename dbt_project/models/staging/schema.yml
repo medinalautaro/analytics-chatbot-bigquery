@@ -1,0 +1,35 @@
+version: 2
+
+sources:
+  - name: raw
+    database: project-f3e4931e-2406-418c-917
+    schema: raw
+    tables:
+      - name: customers
+      - name: products
+      - name: orders
+      - name: order_items
+      - name: payments
+      - name: shipments
+      - name: returns
+      - name: marketing_spend
+
+models:
+  - name: stg_customers
+    description: Cleaned customer source data.
+    columns:
+      - name: customer_id
+        tests:
+          - not_null
+          - unique
+
+  - name: stg_orders
+    description: Cleaned order source data.
+    columns:
+      - name: order_id
+        tests:
+          - not_null
+          - unique
+      - name: customer_id
+        tests:
+          - not_null
