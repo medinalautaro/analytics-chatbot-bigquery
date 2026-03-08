@@ -4,3 +4,6 @@ This project implements a small analytics platform designed to simulate a modern
 
 On top of these analytical models, a chatbot interface allows users to query key business metrics such as revenue, customer activity, and product performance using natural language.
 
+### Synthetic Data Validation
+
+The dataset is validated with automated checks covering referential integrity, event ordering, and realistic behavioral patterns (long-tail purchasing and seasonal demand).
