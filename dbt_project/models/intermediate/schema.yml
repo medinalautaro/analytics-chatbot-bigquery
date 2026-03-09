@@ -8,15 +8,34 @@ models:
         tests:
           - not_null
           - unique
-
       - name: customer_id
         tests:
           - not_null
-
       - name: order_date
         tests:
           - not_null
-
       - name: total_amount
         tests:
           - not_null
+
+  - name: int_order_lines_enriched
+    description: Order-line level intermediate model enriched with product and order attributes.
+    columns:
+      - name: order_item_id
+        tests:
+          - not_null
+          - unique
+      - name: order_id
+        tests:
+          - not_null
+      - name: product_id
+        tests:
+          - not_null
+
+  - name: int_returns_by_product
+    description: Product-level aggregation of returns.
+    columns:
+      - name: product_id
+        tests:
+          - not_null
+          - unique
