@@ -1,0 +1,5 @@
+pandas
+numpy
+pyarrow
+google-cloud-bigquery
+dbt-bigquery

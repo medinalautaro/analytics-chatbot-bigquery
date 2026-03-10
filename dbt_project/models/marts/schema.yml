@@ -1,0 +1,57 @@
+version: 2
+
+models:
+  - name: dim_customers
+    description: Customer dimension with one row per customer.
+    columns:
+      - name: customer_id
+        tests:
+          - not_null
+          - unique
+
+  - name: dim_products
+    description: Product dimension with one row per product.
+    columns:
+      - name: product_id
+        tests:
+          - not_null
+          - unique
+
+  - name: mart_revenue_daily
+    description: Daily revenue mart built from the orders fact table.
+
+  - name: mart_product_performance
+    description: Product-level performance mart with revenue, units sold, and return rate.
+    columns:
+      - name: product_id
+        tests:
+          - not_null
+          - unique
+      - name: product_name
+        tests:
+          - not_null
+      - name: category
+        tests:
+          - not_null
+      - name: units_sold
+        tests:
+          - not_null
+      - name: revenue
+        tests:
+          - not_null
+          
+  - name: mart_channel_performance
+    description: Daily channel-level performance mart with orders, revenue, and average order value.
+    columns:
+      - name: order_date
+        tests:
+          - not_null
+      - name: marketing_channel
+        tests:
+          - not_null
+      - name: order_count
+        tests:
+          - not_null
+      - name: revenue
+        tests:
+          - not_null

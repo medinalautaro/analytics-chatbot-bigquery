@@ -14,7 +14,7 @@ select
     o.device_type,
     o.marketing_channel
 from {{ source('raw', 'order_items') }} as oi
-left join {{ source('raw', 'products') }} as p
+left join {{ ref('stg_products') }} as p
     on oi.product_id = p.product_id
 left join {{ ref('fct_orders') }} as o
     on oi.order_id = o.order_id

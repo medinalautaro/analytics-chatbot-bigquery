@@ -2,23 +2,29 @@
 __pycache__/
 *.pyc
 .venv/
-env/
 venv/
+env/
+
+# Airflow
+airflow/logs/
+airflow/config/
+airflow/.env
 
 # dbt
 dbt_project/target/
 dbt_project/logs/
 dbt_project/dbt_packages/
 
-# BigQuery credentials (safety)
-*.json
-.env
-
-# Generated datasets
+# Generated data
 data/generated/*.csv
+synthetic_ecommerce_data/
 
-# OS
+# OS / editor
 .DS_Store
 Thumbs.db
+.vscode/
+.idea/
 
-data/generated/*.csv
+# Secrets / local credentials
+*.json
+.env

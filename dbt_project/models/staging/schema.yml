@@ -33,3 +33,18 @@ models:
       - name: customer_id
         tests:
           - not_null
+
+  - name: stg_products
+    description: Cleaned product source data.
+    columns:
+      - name: product_id
+        tests:
+          - not_null
+          - unique
+      - name: product_name
+        tests:
+          - not_null
+      - name: category
+        tests:
+          - not_null
+          
