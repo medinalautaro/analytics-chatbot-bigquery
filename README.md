@@ -6,21 +6,35 @@ On top of these analytical models, a chatbot interface allows users to query key
 
 ## Architecture
 
-        Python
+       Python
  Synthetic Data Generator
+
           │
+
           ▼
+
       BigQuery
+
    Raw Data Layer
+
           │
+
           ▼
+
         dbt
+
    Data Transformations
+
           │
+
           ▼
+
    Analytics Data Marts
+
           │
+
           ▼
+          
         Chatbot
 
 ### Pipeline Orchestration
@@ -82,20 +96,35 @@ analytics-chatbot-bigquery
 ├── dbt_project
 
 │   ├── models
+
 │   │   ├── staging
+
 │   │   ├── intermediate
+
 │   │   └── marts
+
 │   └── dbt_project.yml
+
 │
+
 ├── scripts
+
 │   ├── generate_synthetic_ecommerce.py
+
 │   ├── validate_synthetic_ecommerce.py
+
 │   └── load_to_bigquery.py
+
 │
+
 ├── data
+
 │   └── generated synthetic datasets
+
 │
+
 ├── Makefile
+
 └── README.md
 
 
