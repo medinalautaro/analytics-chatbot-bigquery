@@ -7,35 +7,21 @@ On top of these analytical models, a chatbot interface allows users to query key
 ## Architecture
 
        Python
- Synthetic Data Generator
-
+       Synthetic Data Generator
           │
-
           ▼
-
-      BigQuery
-
-   Raw Data Layer
-
+       BigQuery
+       Raw Data Layer
           │
-
           ▼
-
-        dbt
-
-   Data Transformations
-
+       dbt
+       Data Transformations
           │
-
           ▼
-
-   Analytics Data Marts
-
+       Analytics Data Marts
           │
-
           ▼
-          
-        Chatbot
+       Chatbot
 
 ### Pipeline Orchestration
 
@@ -75,57 +61,32 @@ The transformation layer is implemented in dbt and organized into staging, inter
 
 ## Project Structure
 
-analytics-chatbot-bigquery
-
-│
-
-├── airflow
-
-│   ├── dags
-
-│   │   └── ecommerce_elt_pipeline.py
-
-│   ├── docker-compose.yml
-
-│   ├── Dockerfile
-
-│   └── requirements-airflow.txt
-
-│
-
-├── dbt_project
-
-│   ├── models
-
-│   │   ├── staging
-
-│   │   ├── intermediate
-
-│   │   └── marts
-
-│   └── dbt_project.yml
-
-│
-
-├── scripts
-
-│   ├── generate_synthetic_ecommerce.py
-
-│   ├── validate_synthetic_ecommerce.py
-
-│   └── load_to_bigquery.py
-
-│
-
-├── data
-
-│   └── generated synthetic datasets
-
-│
-
-├── Makefile
-
-└── README.md
+       analytics-chatbot-bigquery
+       │
+       ├── airflow
+       │   ├── dags
+       │   │   └── ecommerce_elt_pipeline.py
+       │   ├── docker-compose.yml
+       │   ├── Dockerfile
+       │   └── requirements-airflow.txt
+       │
+       ├── dbt_project
+       │   ├── models
+       │   │   ├── staging
+       │   │   ├── intermediate
+       │   │   └── marts
+       │   └── dbt_project.yml
+       │
+       ├── scripts
+       │   ├── generate_synthetic_ecommerce.py
+       │   ├── validate_synthetic_ecommerce.py
+       │   └── load_to_bigquery.py
+       │
+       ├── data
+       │   └── generated synthetic datasets
+       │
+       ├── Makefile
+       └── README.md
 
 
 ## Running the Project
