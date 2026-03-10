@@ -62,15 +62,25 @@ The transformation layer is implemented in dbt and organized into staging, inter
 ## Project Structure
 
 analytics-chatbot-bigquery
+
 │
+
 ├── airflow
+
 │   ├── dags
+
 │   │   └── ecommerce_elt_pipeline.py
+
 │   ├── docker-compose.yml
+
 │   ├── Dockerfile
+
 │   └── requirements-airflow.txt
+
 │
+
 ├── dbt_project
+
 │   ├── models
 │   │   ├── staging
 │   │   ├── intermediate
