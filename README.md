@@ -66,7 +66,7 @@ Execute dbt transformations
 
 Run dbt tests
 
-![alt text](airflow-dag.png)
+![alt text](screenshots/airflow-dag.png)
 
 ### Synthetic Data Validation
 
@@ -74,7 +74,7 @@ The dataset is validated with automated checks covering referential integrity, e
 
 ## Data Transformation
 
-![Pipeline](dbt-dag.png)
+![Pipeline](screenshots/dbt-dag.png)
 
 Data transformations are implemented using **dbt**.  
 Raw BigQuery tables are cleaned and standardized in a staging layer before being used by analytical models.
