@@ -1,3 +1,7 @@
+{{ config(
+    materialized='table'
+) }}
+
 select
     oi.product_id,
     count(r.return_id) as return_count

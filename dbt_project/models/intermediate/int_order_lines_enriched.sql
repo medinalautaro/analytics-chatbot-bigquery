@@ -1,3 +1,12 @@
+{{ config(
+    materialized='table',
+    partition_by={
+      "field": "order_date",
+      "data_type": "date"
+    },
+    cluster_by=["product_id", "marketing_channel", "order_status"]
+) }}
+
 select
     oi.order_item_id,
     oi.order_id,

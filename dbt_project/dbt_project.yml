@@ -20,5 +20,23 @@ models:
       +materialized: view
     intermediate:
       +materialized: view
+
+      max_dates:
+        +materialized: table
     marts:
       +materialized: table
+    chatbot:
+      chatbot_revenue_monthly:
+        +materialized: table
+
+      chatbot_channel_performance_monthly:
+        +materialized: table
+
+      chatbot_orders_daily:
+        +materialized: table
+
+      chatbot_metric_catalog:
+        +materialized: view
+
+      chatbot_model_catalog:
+        +materialized: view

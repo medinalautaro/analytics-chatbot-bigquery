@@ -39,3 +39,13 @@ models:
         tests:
           - not_null
           - unique
+  
+  - name: max_dates
+    description: Latest dates of completed orders.
+    columns:
+      - name: latest_order_date
+        tests:
+          - not_null
+      - name: latest_order_month
+        tests:
+          - not_null

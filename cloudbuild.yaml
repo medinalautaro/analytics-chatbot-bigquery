@@ -1,0 +1,14 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      [
+        'build',
+        '-t',
+        'us-central1-docker.pkg.dev/project-f3e4931e-2406-418c-917/chatbot-repo/chatbot-api:latest',
+        '.'
+      ]
+images:
+  - 'us-central1-docker.pkg.dev/project-f3e4931e-2406-418c-917/chatbot-repo/chatbot-api:latest'
+serviceAccount: 'projects/project-f3e4931e-2406-418c-917/serviceAccounts/chatbot-api@project-f3e4931e-2406-418c-917.iam.gserviceaccount.com'
+options:
+  logging: CLOUD_LOGGING_ONLY

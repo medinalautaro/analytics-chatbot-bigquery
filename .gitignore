@@ -4,6 +4,10 @@ __pycache__/
 .venv/
 venv/
 env/
+*.pyd
+*.egg-info/
+dist/
+build/
 
 # Airflow
 airflow/logs/
@@ -28,3 +32,12 @@ Thumbs.db
 # Secrets / local credentials
 *.json
 .env
+
+# Logs
+*.log
+logs/
+
+#local Test
+test_*.py
+*.tmp
+*.bak

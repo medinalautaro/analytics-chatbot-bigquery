@@ -1,0 +1,90 @@
+version: 2
+
+models:
+  - name: chatbot_revenue_monthly
+    description: Monthly revenue metrics for completed orders.
+    columns:
+      - name: order_month
+        description: First day of the month representing the aggregation period.
+        tests:
+          - not_null
+          - unique
+
+      - name: order_count
+        description: Number of completed orders in the month.
+        tests:
+          - not_null
+
+      - name: revenue
+        description: Sum of total_amount for completed orders in the month.
+        tests:
+          - not_null
+
+      - name: avg_order_value
+        description: Average total_amount for completed orders in the month.
+        tests:
+          - not_null
+
+  - name: chatbot_channel_performance_monthly
+    description: Monthly marketing channel performance for completed orders.
+    columns:
+      - name: order_month
+        description: First day of the month representing the aggregation period.
+        tests:
+          - not_null
+
+      - name: marketing_channel
+        description: Marketing acquisition channel associated with the order.
+        tests:
+          - not_null
+
+      - name: order_count
+        description: Number of completed orders for the month and channel.
+        tests:
+          - not_null
+
+      - name: revenue
+        description: Sum of total_amount for completed orders for the month and channel.
+        tests:
+          - not_null
+
+      - name: avg_order_value
+        description: Average total_amount for completed orders for the month and channel.
+        tests:
+          - not_null
+
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - order_month
+            - marketing_channel
+
+  - name: chatbot_orders_daily
+    description: Daily completed order metrics.
+    columns:
+      - name: order_date
+        description: Order date at daily grain.
+        tests:
+          - not_null
+          - unique
+
+      - name: order_count
+        description: Number of completed orders for the day.
+        tests:
+          - not_null
+
+      - name: revenue
+        description: Sum of total_amount for completed orders for the day.
+        tests:
+          - not_null
+
+      - name: avg_order_value
+        description: Average total_amount for completed orders for the day.
+        tests:
+          - not_null
+
+  - name: chatbot_metric_catalog
+    description: Trusted metric definitions used by the hybrid chatbot.
+
+  - name: chatbot_model_catalog
+    description: Catalog of chatbot-safe semantic models and their intended use.
