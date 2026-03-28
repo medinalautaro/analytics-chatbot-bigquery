@@ -192,19 +192,32 @@ gcloud run deploy chatbot-api
 
 ## Tech Stack
 
-Python — data generation, backend logic, integrations
-BigQuery — cloud data warehouse
-dbt — transformations and analytical modeling
-Apache Airflow — pipeline orchestration
-FastAPI — chatbot API
-Streamlit — frontend UI
-Docker — containerization
-Google Cloud Run — API deployment
-Secret Manager — secret storage
-OpenAI API — natural language generation
+- Python — data generation, backend logic, integrations
+
+- BigQuery — cloud data warehouse
+
+- dbt — transformations and analytical modeling
+
+- Apache Airflow — pipeline orchestration
+
+- FastAPI — chatbot API
+
+- Streamlit — frontend UI
+
+- ocker — containerization
+
+- Google Cloud Run — API deployment
+
+- Secret Manager — secret storage
+
+- OpenAI API — natural language generation
 
 ## Limitations
-Only approved analytical query patterns are supported
-Caching is currently in-memory only
-RAG coverage depends on the size of the documentation knowledge base
-Chatbot behavior is optimized for demo and portfolio use, not high-throughput production workloads
+
+- Only approved analytical query patterns are supported
+
+- Caching is currently in-memory only
+
+- RAG coverage depends on the size of the documentation knowledge base
+
+- Chatbot behavior is optimized for demo and portfolio use, not high-throughput production workloads
