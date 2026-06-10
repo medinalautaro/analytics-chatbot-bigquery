@@ -478,7 +478,8 @@ class ChatService:
         try:
             rag_result = self.rag_service.retrieve_sources_with_metrics(
                 rag_question,
-                top_k=3,
+                retrieval_k=10,
+                rerank_k=3,
             )
 
             sources = rag_result["sources"]

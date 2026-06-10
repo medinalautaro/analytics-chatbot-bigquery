@@ -1,4 +1,4 @@
-from sentence_transformers import CrossEncoder
+"""from sentence_transformers import CrossEncoder
 
 
 RERANKER_MODEL = "cross-encoder/ms-marco-MiniLM-L-6-v2"
@@ -24,4 +24,45 @@ class Reranker:
 
         ranked.sort(key=lambda x: x["rerank_score"], reverse=True)
 
-        return ranked[:top_k]
+        return ranked[:top_k]"""
+
+from sentence_transformers import CrossEncoder
+
+
+RERANKER_MODEL = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+
+
+class Reranker:
+    def __init__(self):
+        self.model = CrossEncoder(RERANKER_MODEL)
+
+    def rerank(
+        self,
+        question: str,
+        documents: list[dict],
+        top_k: int = 3,
+    ) -> list[dict]:
+
+        if not documents:
+            return []
+
+        pairs = [
+            (question, doc["snippet"])
+            for doc in documents
+        ]
+
+        scores = self.model.predict(pairs)
+
+        reranked = []
+
+        for doc, score in zip(documents, scores):
+            item = dict(doc)
+            item["rerank_score"] = round(float(score), 4)
+            reranked.append(item)
+
+        reranked.sort(
+            key=lambda x: x["rerank_score"],
+            reverse=True,
+        )
+
+        return reranked[:top_k]

@@ -1,28 +1,49 @@
-from chatbot.rag.simple_retriever import SimpleRetriever
+from chatbot.rag.retriever import Retriever
 from chatbot.llm.client import LLMClient
 from chatbot.llm.prompts import RAG_PROMPT
+from chatbot.rag.reranker import Reranker
 import time
 
 
 class RAGService:
     def __init__(self):
-        self.retriever = SimpleRetriever()
+        self.retriever = Retriever()
         self.llm = LLMClient()
+        self.reranker = Reranker()
 
-    def retrieve_sources(self, question: str, top_k: int = 3) -> list[dict]:
-        return self.retriever.retrieve(question, top_k=top_k)
+    def retrieve_sources(
+        self,
+        question: str,
+        retrieval_k: int = 10,
+        rerank_k: int = 3,
+    ) -> list[dict]:
+
+        retrieved = self.retriever.retrieve(
+            question,
+            top_k=retrieval_k,
+        )
+
+        reranked = self.reranker.rerank(
+            question=question,
+            documents=retrieved,
+            top_k=rerank_k,
+        )
+
+        return reranked
     
     def retrieve_sources_with_metrics(
         self,
         question: str,
-        top_k: int = 3,
+        retrieval_k: int = 10,
+        rerank_k: int = 3,
     ) -> dict:
 
         start = time.perf_counter()
 
         sources = self.retrieve_sources(
             question,
-            top_k=top_k,
+            retrieval_k=retrieval_k,
+            rerank_k=rerank_k,
         )
 
         retrieval_time_ms = round(
@@ -33,10 +54,16 @@ class RAGService:
         return {
             "sources": sources,
             "rag_retrieval_time_ms": retrieval_time_ms,
+            "retrieval_k": retrieval_k,
+            "rerank_k": rerank_k,
         }
 
     def answer(self, question: str) -> dict:
-        sources = self.retrieve_sources(question, top_k=3)
+        sources = self.retrieve_sources(
+            question,
+            retrieval_k=10,
+            rerank_k=3,
+        )
 
         if not sources:
             return {

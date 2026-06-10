@@ -4,10 +4,10 @@
 
 | Metric | Value |
 |---|---:|
-| Average latency ms | 4401.06 |
-| Average reported response time ms | 2271.29 |
-| Average estimated tokens | 61.6 |
-| Average semantic similarity | 0.4963 |
+| Average latency ms | 15212.92 |
+| Average reported response time ms | 2159.46 |
+| Average estimated tokens | 53.4 |
+| Average semantic similarity | 0.5041 |
 
 ## Agent Performance
 
@@ -24,10 +24,10 @@
 | Metric | Value |
 |---|---:|
 | RAG context coverage | 0.75 |
-| RAG recall proxy | 0.5 |
-| RAG precision@k | 0.5556 |
+| RAG recall proxy | 0.75 |
+| RAG precision@k | 1.0 |
 | Average RAG sources | 2.25 |
-| Average RAG retrieval time ms | 1.53 |
+| Average RAG retrieval time ms | 121.35 |
 
 ## Security and Robustness
 
