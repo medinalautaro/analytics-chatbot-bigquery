@@ -27,15 +27,39 @@ On top of these analytical models, a chatbot interface allows users to query key
                  ▼
               Chatbot
 
+---
+
 ## Chatbot Architecture
 
-The chatbot layer is implemented using FastAPI and integrates multiple components:
+```text
+User
+ │
+ ▼
+Streamlit UI
+ │
+ ▼
+FastAPI API
+ │
+ ▼
+Router / Agent Layer
+ ├── SQL route    → SQL generation → BigQuery → LLM response
+ ├── RAG route    → Documentation retrieval → LLM response
+ └── Hybrid route → BigQuery + RAG context → LLM response
+```
 
-- **Routing layer**: classifies questions into SQL, RAG, or Hybrid
-- **SQL executor**: generates and runs safe queries against BigQuery
-- **RAG system**: retrieves relevant documentation snippets
-- **LLM layer**: generates natural language responses
-- **Memory layer**: tracks conversation context and follow-up questions
+### Core components
+
+| Component | Responsibility |
+|---|---|
+| Router | Classifies each question as SQL, RAG or Hybrid. |
+| SQL layer | Builds safe analytical queries and executes them in BigQuery. |
+| RAG layer | Retrieves relevant snippets from project documentation. |
+| LLM layer | Produces final natural-language answers. |
+| Memory layer | Keeps short conversational context for follow-up questions. |
+| Cache layer | Reduces repeated calls for identical or similar requests. |
+| Debug layer | Exposes route, SQL, sources and execution metadata in the UI. |
+
+---
 
 ### Flow
 
@@ -100,6 +124,46 @@ The transformation layer is implemented in dbt and organized into staging, inter
 - In-memory caching to reduce repeated queries
 - Fully containerized and cloud-deployed API
 
+---
+
+## Evaluation
+
+The project includes an evaluation module under `evaluation/` with scripts and generated results.
+
+### Current evaluation summary
+
+| Area | Metric | Value |
+|---|---:|---:|
+| Model Performance | Average latency ms | 15212.92 |
+| Model Performance | Average reported response time ms | 2159.46 |
+| Model Performance | Average estimated tokens | 53.4 |
+| Model Performance | Average semantic similarity | 0.5041 |
+| Agent Performance | Route accuracy | 0.9 |
+| Agent Performance | Agent decision coherence | 0.8571 |
+| Agent Performance | Agent dialogue completeness | 0.7143 |
+| Agent Performance | Agent redundancy avoidance | 1.0 |
+| Agent Performance | Average agent steps | 1.43 |
+| RAG Efficiency | RAG context coverage | 0.75 |
+| RAG Efficiency | RAG recall proxy | 0.75 |
+| RAG Efficiency | RAG precision@k | 1.0 |
+| RAG Efficiency | Average RAG sources | 2.25 |
+| RAG Efficiency | Average RAG retrieval time ms | 121.35 |
+| Security and Robustness | Blocked cases | 3 |
+| Security and Robustness | SQL cases with rows | 4 |
+| Security and Robustness | RAG cases with sources | 3 |
+
+Evaluation files:
+
+```text
+evaluation/
+├── eval_report.md
+├── eval_requests.py
+├── eval_results.csv
+└── generate_report.py
+```
+
+---
+
 ## Project Structure
 
        analytics-chatbot-bigquery
@@ -112,15 +176,20 @@ The transformation layer is implemented in dbt and organized into staging, inter
        │   └── requirements-airflow.txt
        │
        ├── chatbot/
-       │    │   ├── api/
-       │    │   │   └── main.py
-       │    │   ├── core/
-       │    │   ├── llm/
-       │    │   ├── rag/
-       │    │   ├── services/
-       │    │   ├── sql/
-       │    │   └── ui/
-       │    │       └── streamlit_app.py
+       │   ├── api/
+       │   │   └── main.py
+       │   ├── core/
+       │   ├── llm/
+       │   ├── rag/
+       │   ├── services/
+       │   ├── sql/
+       │   ├── ui/
+       │   │   └── streamlit_app.py
+       │   ├── utils/
+       │   ├── app.py
+       │   ├── queries.py
+       │   ├── schemas.py
+       │   └── utils.py
        │
        ├── dbt_project
        │   ├── models
@@ -128,6 +197,12 @@ The transformation layer is implemented in dbt and organized into staging, inter
        │   │   ├── intermediate
        │   │   └── marts
        │   └── dbt_project.yml
+       │
+       ├── evaluation/
+       │   ├── eval_report.md
+       │   ├── eval_requests.py
+       │   ├── eval_results.csv
+       │   └── generate_report.py
        │
        ├── scripts
        │   ├── generate_synthetic_ecommerce.py
@@ -204,7 +279,7 @@ gcloud run deploy chatbot-api
 
 - Streamlit — frontend UI
 
-- ocker — containerization
+- Docker — containerization
 
 - Google Cloud Run — API deployment
 
@@ -212,12 +287,73 @@ gcloud run deploy chatbot-api
 
 - OpenAI API — natural language generation
 
+---
+
+## Example Questions
+
+### SQL route
+
+```text
+What was the total revenue last month?
+```
+
+```text
+Which products generated the highest revenue?
+```
+
+```text
+How many active customers purchased in the last 30 days?
+```
+
+### RAG route
+
+```text
+How is revenue defined in this project?
+```
+
+```text
+What tables are available in the analytics layer?
+```
+
+```text
+What business rules are used to validate the synthetic data?
+```
+
+### Hybrid route
+
+```text
+Compare last month revenue with the project definition of revenue.
+```
+
+```text
+Show product performance and explain which table supports that metric.
+```
+
+---
+
 ## Limitations
 
-- Only approved analytical query patterns are supported
+- The chatbot is optimized for demo and portfolio usage, not high-throughput production traffic.
+- SQL generation is intentionally restricted to approved analytical query patterns.
+- Cache is currently in memory, so it resets when the process restarts.
+- RAG quality depends on the coverage and freshness of the documentation under `docs/`.
+- The Streamlit frontend is intended as a simple UI rather than a production-grade web app.
+- Synthetic data is realistic enough for analytics workflows but does not represent a real business.
 
-- Caching is currently in-memory only
+---
 
-- RAG coverage depends on the size of the documentation knowledge base
+## Roadmap
 
-- Chatbot behavior is optimized for demo and portfolio use, not high-throughput production workloads
+Potential improvements:
+
+- Persistent conversation memory.
+- More robust query catalog with semantic metric definitions.
+- Expanded RAG corpus and source ranking.
+- Better SQL validation and query rewriting.
+- Persistent cache layer.
+- Authentication for the API.
+- CI/CD pipeline for tests and deployment.
+- More evaluation cases for routing, SQL correctness and RAG grounding.
+- Dashboard views for generated metrics.
+
+---
