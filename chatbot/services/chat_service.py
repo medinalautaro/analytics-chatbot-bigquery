@@ -9,6 +9,12 @@ from chatbot.llm.client import LLMClient
 from chatbot.llm.prompts import SQL_ANSWER_PROMPT, HYBRID_PROMPT
 from chatbot.rag.service import RAGService
 from chatbot.core.config import settings
+from chatbot.agents.analyst_agent import AnalystAgent
+from chatbot.agents.verifier_agent import VerifierAgent
+from chatbot.observability.metrics import RequestMetrics
+from chatbot.security.input_guard import InputGuard
+from chatbot.security.output_guard import OutputGuard
+from chatbot.security.audit_logger import AuditLogger
 from cachetools import TTLCache
 import json
 
@@ -28,6 +34,11 @@ class ChatService:
         self.rag_service = RAGService()
         self.memory = MemoryStore()
         self.history = HistoryStore()
+        self.analyst = AnalystAgent()
+        self.verifier = VerifierAgent()
+        self.input_guard = InputGuard()
+        self.output_guard = OutputGuard()
+        self.audit_logger = AuditLogger()
 
     def _history_payload(self) -> list[dict]:
         items = self.history.get_history()
@@ -56,6 +67,9 @@ class ChatService:
         rows: list | None = None,
         sources: list | None = None,
         error: str | None = None,
+        verification: dict | None = None,
+        agent_trace: list | None = None,
+        metrics: dict | None = None,
         **extra,
     ) -> dict:
         result = {
@@ -69,14 +83,48 @@ class ChatService:
             "route": route,
             "sources": sources or [],
             "history": self._history_payload(),
+            "verification": verification,
+            "agent_trace": agent_trace or [],
+            "metrics": metrics or {},
         }
         result.update(extra)
         return result
 
     def answer(self, question: str) -> dict:
+
+        metrics = RequestMetrics()
         original_question = (question or "").strip()
+
+        guard_result = self.input_guard.validate(original_question)
+
+        if not guard_result["allowed"]:
+            result = self._response(
+                question=original_question,
+                resolved_question=original_question,
+                query_name=None,
+                sql=None,
+                rows=[],
+                answer="Your request was blocked by the input safety guard.",
+                error=guard_result["error"],
+                route="blocked",
+                sources=[],
+                verification={
+                    "approved": False,
+                    "feedback": [guard_result["reason"]],
+                },
+                agent_trace=[
+                    {
+                        "agent": "InputGuard",
+                        "message": guard_result["reason"],
+                    }
+                ],
+            )
+            result["metrics"] = metrics.finish()
+            result["cache_hit"] = False
+            return result
+
         if not original_question:
-            return self._response(
+            result = self._response(
                 question="",
                 resolved_question="",
                 query_name=None,
@@ -85,13 +133,15 @@ class ChatService:
                 answer="Please enter a question before sending.",
                 error="EMPTY_MESSAGE",
                 route="unknown",
-                sources=[],
+                sources=[], 
             )
+            result["metrics"] = metrics.finish()
+            return result
 
         try:
             settings.validate()
         except ValueError:
-            return self._response(
+            result = self._response(
                 question=original_question,
                 resolved_question=original_question,
                 query_name=None,
@@ -102,12 +152,16 @@ class ChatService:
                 route="unknown",
                 sources=[],
             )
+            result["metrics"] = metrics.finish()
+            return result
 
         history_payload = self._history_payload()
         cache_key = make_cache_key(original_question, history_payload)
 
         cached = response_cache.get(cache_key)
         if cached is not None:
+            cached["cache_hit"] = True
+            cached["metrics"] = metrics.finish()
             return cached
 
         state = self.memory.get_state()
@@ -115,6 +169,18 @@ class ChatService:
 
         try:
             route = decide_route(question)
+            analysis = self.analyst.analyze(
+                question=question,
+                route=route,
+                context={}
+            )
+            agent_trace = [
+                {
+                    "agent": "AnalystAgent",
+                    "message": analysis.get("reasoning"),
+                    "route": route.value if hasattr(route, "value") else str(route),
+                }
+            ]
         except Exception:
             result = self._response(
                 question=original_question,
@@ -128,12 +194,26 @@ class ChatService:
                 sources=[],
             )
             self._update_history(original_question, result)
+            result["metrics"] = metrics.finish()
             return result
 
         if route == RouteType.RAG:
             try:
                 result = self.rag_service.answer(question)
                 result["resolved_question"] = question
+                verification = self.verifier.verify(
+                    answer=result.get("answer", ""),
+                    sources=result.get("sources", []),
+                )
+                agent_trace = agent_trace or []
+                agent_trace.append({
+                    "agent": "VerifierAgent",
+                    "message": "Answer approved" if verification["approved"] else "Answer rejected",
+                    "feedback": verification["feedback"],
+                })
+
+                result["verification"] = verification
+                result["agent_trace"] = agent_trace
 
                 if not result.get("sources"):
                     result = self._response(
@@ -146,16 +226,32 @@ class ChatService:
                         error="NO_RAG_SOURCES",
                         route=route.value,
                         sources=[],
+                        verification=verification,
+                        agent_trace=agent_trace,
                     )
                 else:
                     result["history"] = self._history_payload()
 
                 self._update_memory(original_question, route.value, result)
                 self._update_history(original_question, result)
+                
+                result["metrics"] = metrics.finish()
+                result["cache_hit"] = False
+                result["output_validation"] = self.output_guard.validate(result)
+                self.audit_logger.log(result)
+
                 response_cache[cache_key] = result
+                
                 return result
 
-            except Exception:
+            except Exception as e:
+                agent_trace = agent_trace or []
+                agent_trace.append({
+                    "agent": "VerifierAgent",
+                    "message": "RAG answer failed before verification",
+                    "feedback": [str(e)],
+                })
+
                 result = self._response(
                     question=original_question,
                     resolved_question=question,
@@ -166,8 +262,14 @@ class ChatService:
                     error="RAG_ANSWER_FAILED",
                     route=route.value,
                     sources=[],
+                    verification=None,
+                    agent_trace=agent_trace,
                 )
                 self._update_history(original_question, result)
+                result["metrics"] = metrics.finish()
+                result["cache_hit"] = False
+                result["output_validation"] = self.output_guard.validate(result)
+                self.audit_logger.log(result)
                 return result
 
         if route == RouteType.SQL:
@@ -175,9 +277,14 @@ class ChatService:
             if is_followup_question(sql_question):
                 sql_question = resolve_followup(sql_question, state)
 
-            result = self._answer_sql(sql_question, route.value)
+            result = self._answer_sql(sql_question, route.value, agent_trace)
             self._update_memory(original_question, route.value, result)
             self._update_history(original_question, result)
+
+            result["metrics"] = metrics.finish()
+            result["cache_hit"] = False
+            result["output_validation"] = self.output_guard.validate(result)
+            self.audit_logger.log(result)
 
             if result.get("error") not in {"BIGQUERY_EXECUTION_FAILED", "SQL_SUMMARY_FAILED"}:
                 response_cache[cache_key] = result
@@ -185,9 +292,18 @@ class ChatService:
             return result
 
         if route == RouteType.HYBRID:
-            result = self._answer_hybrid(question, state)
+            result = self._answer_hybrid(question, state, agent_trace)
             self._update_memory(original_question, route.value, result)
             self._update_history(original_question, result)
+
+            result["metrics"] = metrics.finish()
+            if result.get("rag_retrieval_time_ms") is not None:
+                result["metrics"]["rag_retrieval_time_ms"] = (
+                    result["rag_retrieval_time_ms"]
+                )
+            result["cache_hit"] = False
+            result["output_validation"] = self.output_guard.validate(result)
+            self.audit_logger.log(result)
 
             if result.get("error") not in {"BIGQUERY_EXECUTION_FAILED", "HYBRID_ANSWER_FAILED"}:
                 response_cache[cache_key] = result
@@ -206,10 +322,16 @@ class ChatService:
             sources=[],
         )
         self._update_history(original_question, result)
+
+        result["metrics"] = metrics.finish()
+        result["cache_hit"] = False
+        result["output_validation"] = self.output_guard.validate(result)
+        self.audit_logger.log(result)
+        
         response_cache[cache_key] = result
         return result
 
-    def _answer_sql(self, question: str, route_value: str) -> dict:
+    def _answer_sql(self, question: str, route_value: str, agent_trace: list | None = None) -> dict:
         try:
             sql_result = self.sql_executor.run(question)
 
@@ -274,6 +396,18 @@ class ChatService:
 
         try:
             answer = self.llm.generate(prompt)
+            verification = self.verifier.verify(
+                answer=answer,
+                sources=[],
+                sql=sql_result.sql,
+                rows=sql_result.rows,
+            )
+            agent_trace = agent_trace or []
+            agent_trace.append({
+                "agent": "VerifierAgent",
+                "message": "Answer approved" if verification["approved"] else "Answer rejected",
+                "feedback": verification["feedback"],
+            })
         except Exception:
             return self._response(
                 question=question,
@@ -297,9 +431,11 @@ class ChatService:
             error=None,
             route=route_value,
             sources=[],
+            verification=verification,
+            agent_trace=agent_trace,
         )
 
-    def _answer_hybrid(self, question: str, state) -> dict:
+    def _answer_hybrid(self, question: str, state, agent_trace: list | None = None) -> dict:
         parts = decompose_hybrid_question(question)
         sql_question = parts["sql_question"]
         rag_question = parts["rag_question"]
@@ -340,7 +476,13 @@ class ChatService:
 
         retrieval_error = None
         try:
-            sources = self.rag_service.retrieve_sources(rag_question, top_k=3)
+            rag_result = self.rag_service.retrieve_sources_with_metrics(
+                rag_question,
+                top_k=3,
+            )
+
+            sources = rag_result["sources"]
+            rag_retrieval_time_ms = rag_result["rag_retrieval_time_ms"]
         except Exception as e:
             sources = []
             retrieval_error = str(e)
@@ -359,6 +501,18 @@ class ChatService:
 
         try:
             answer = self.llm.generate(prompt)
+            verification = self.verifier.verify(
+                answer=answer,
+                sources=sources,
+                sql=sql_result.sql,
+                rows=sql_result.rows,
+            )
+            agent_trace = agent_trace or []
+            agent_trace.append({
+                "agent": "VerifierAgent",
+                "message": "Answer approved" if verification["approved"] else "Answer rejected",
+                "feedback": verification["feedback"],
+            })
         except Exception:
             error_code = "HYBRID_ANSWER_FAILED"
             if retrieval_error and not sources:
@@ -388,6 +542,9 @@ class ChatService:
             route="hybrid",
             sources=sources,
             decomposition=parts,
+            verification=verification,
+            agent_trace=agent_trace,
+            rag_retrieval_time_ms=rag_retrieval_time_ms,
         )
         return result
 

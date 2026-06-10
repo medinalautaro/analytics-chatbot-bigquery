@@ -27,6 +27,9 @@ def history():
 @app.post("/chat")
 def chat(request: ChatRequest):
     return service.answer(request.question)"""
+
+from fastapi import UploadFile, File
+from chatbot.vision.classifier import ImageClassifier
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 import traceback
@@ -35,7 +38,22 @@ from chatbot.schemas import ChatRequest
 from chatbot.services.chat_service import ChatService
 from chatbot.utils.responses import error_response
 
+from pydantic import BaseModel
+from chatbot.rag.retriever import Retriever
+from chatbot.rag.reranker import Reranker
+
 app = FastAPI(title="Analytics Chatbot API", version="1.0.0")
+
+image_classifier = ImageClassifier()
+
+retriever = Retriever()
+reranker = Reranker()
+
+
+class RagSearchRequest(BaseModel):
+    question: str
+    retrieval_k: int = 10
+    rerank_k: int = 3
 
 @app.get("/health")
 def health():
@@ -69,3 +87,38 @@ def chat(req: ChatRequest):
                 history=req.history,
             ).model_dump()
         )
+    
+@app.post("/vision/classify")
+async def classify_image(file: UploadFile = File(...), top_k: int = 5):
+    image_bytes = await file.read()
+    return image_classifier.predict(image_bytes=image_bytes, top_k=top_k)
+
+
+@app.post("/rag/search")
+def rag_search(req: RagSearchRequest):
+
+    try:
+
+        retrieved = retriever.retrieve(
+            question=req.question,
+            top_k=req.retrieval_k,
+        )
+
+        reranked = reranker.rerank(
+            question=req.question,
+            documents=retrieved,
+            top_k=req.rerank_k,
+        )
+
+        return {
+            "question": req.question,
+            "context": reranked
+        }
+
+    except Exception as e:
+        import traceback
+
+        return {
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }
